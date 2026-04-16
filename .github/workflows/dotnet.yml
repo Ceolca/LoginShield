@@ -29,7 +29,8 @@ jobs:
       run: dotnet publish -c Release -o publish
 
     - name: Simulate Deployment
-      run: mkdir deployment cp -r publish/* deployment/
+      run: mkdir deployment 
+           cp -r publish/* deployment/
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
