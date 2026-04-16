@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "LoginShield": {
+      "commandName": "Project",
+      "commandLineArgs": "logs.json",
+      "launchBrowser": false
+    }
+  }
+}
