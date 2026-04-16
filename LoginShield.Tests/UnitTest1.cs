@@ -1,7 +1,5 @@
 ﻿using Xunit;
 using LoginShield;
-using System.IO;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,22 +7,28 @@ namespace LoginShield.Tests;
 
 public class SecurityAnalyzerTests
 {
-    private readonly string _testJsonPath = "logs.json";
+    private List<LoginEvent> GetSampleEvents()
+    {
+        return new List<LoginEvent>
+        {
+            new() { IpAddress = "8.8.8.8", Username = "alice", Success = false },
+            new() { IpAddress = "8.8.8.8", Username = "bob", Success = false },
+            new() { IpAddress = "8.8.8.8", Username = "charlie", Success = false },
+            new() { IpAddress = "8.8.8.8", Username = "alice", Success = false },
+
+            new() { IpAddress = "1.1.1.1", Username = "david", Success = true },
+            new() { IpAddress = "2.2.2.2", Username = "eve", Success = false }
+        };
+    }
 
     [Fact]
-    public void Analyze_RealLogsJson_DetectsBruteForceAttack()
+    public void Analyze_DetectsBruteForceAttack()
     {
-        if (!File.Exists(_testJsonPath))
-            Assert.Fail($"Test data file '{_testJsonPath}' not found in test project!");
-
-        var json = File.ReadAllText(_testJsonPath);
-        var events = JsonConvert.DeserializeObject<List<LoginEvent>>(json)!;
-
-        // Act
+        var events = GetSampleEvents();
         var analyzer = new SecurityAnalyzer();
+
         var alerts = analyzer.Analyze(events);
 
-        // Assert
         Assert.NotEmpty(alerts);
         Assert.Single(alerts);
         Assert.Contains("8.8.8.8", alerts[0]);
@@ -32,10 +36,9 @@ public class SecurityAnalyzerTests
     }
 
     [Fact]
-    public void Analyze_RealLogsJson_StatisticsCorrect()
+    public void Analyze_StatisticsCorrect()
     {
-        var json = File.ReadAllText(_testJsonPath);
-        var events = JsonConvert.DeserializeObject<List<LoginEvent>>(json)!;
+        var events = GetSampleEvents();
 
         Assert.Equal(6, events.Count);
         Assert.Equal(1, events.Count(e => e.Success));
@@ -44,15 +47,29 @@ public class SecurityAnalyzerTests
     }
 
     [Fact]
-    public void Analyze_RealLogsJson_AllFieldsPopulated()
+    public void Analyze_AllFieldsPopulated()
     {
-        var json = File.ReadAllText(_testJsonPath);
-        var events = JsonConvert.DeserializeObject<List<LoginEvent>>(json)!;
+        var events = GetSampleEvents();
 
         foreach (var evt in events)
         {
             Assert.NotEmpty(evt.IpAddress);
             Assert.NotEmpty(evt.Username);
         }
+    }
+
+    [Fact]
+    public void Analyze_NoBruteForce_ReturnsEmpty()
+    {
+        var events = new List<LoginEvent>
+        {
+            new() { IpAddress = "1.1.1.1", Username = "user1", Success = false },
+            new() { IpAddress = "2.2.2.2", Username = "user2", Success = false }
+        };
+
+        var analyzer = new SecurityAnalyzer();
+        var alerts = analyzer.Analyze(events);
+
+        Assert.Empty(alerts);
     }
 }

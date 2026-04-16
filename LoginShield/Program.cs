@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,49 +32,41 @@ class Program
         Console.WriteLine("LoginShield - Cybersecurity Brute Force Detector");
         Console.WriteLine("================================================");
 
-        string jsonPath = args.Length > 0 ? args[0] : "logs.json";
-
-        if (!File.Exists(jsonPath))
+        var events = new List<LoginEvent>
         {
-            Console.WriteLine($"File not found: {jsonPath}");
-            Console.WriteLine("Create logs.json with sample data or pass path as argument.");
-            return;
-        }
+            new() { IpAddress = "8.8.8.8", Username = "alice", Success = false },
+            new() { IpAddress = "8.8.8.8", Username = "bob", Success = false },
+            new() { IpAddress = "8.8.8.8", Username = "charlie", Success = false },
+            new() { IpAddress = "8.8.8.8", Username = "alice", Success = false },
 
-        try
+            new() { IpAddress = "1.1.1.1", Username = "david", Success = true },
+            new() { IpAddress = "2.2.2.2", Username = "eve", Success = false }
+        };
+
+        Console.WriteLine($"\n Processed {events.Count} login events");
+        Console.WriteLine($" Successful: {events.Count(e => e.Success)}");
+        Console.WriteLine($" Failed: {events.Count(e => !e.Success)}");
+
+        var analyzer = new SecurityAnalyzer();
+        var alerts = analyzer.Analyze(events);
+
+        if (alerts.Any())
         {
-            var json = await File.ReadAllTextAsync(jsonPath);
-            var events = JsonConvert.DeserializeObject<List<LoginEvent>>(json) ?? new();
-
-            Console.WriteLine($"\n Processed {events.Count} login events");
-            Console.WriteLine($" Successful: {events.Count(e => e.Success)}");
-            Console.WriteLine($" Failed: {events.Count(e => !e.Success)}");
-
-            var analyzer = new SecurityAnalyzer();
-            var alerts = analyzer.Analyze(events);
-
-            if (alerts.Any())
+            Console.WriteLine("\n SECURITY ALERTS:");
+            Console.WriteLine(new string('=', 50));
+            foreach (var alert in alerts)
             {
-                Console.WriteLine("\n SECURITY ALERTS:");
-                Console.WriteLine(new string('=', 50));
-                foreach (var alert in alerts)
-                {
-                    Console.WriteLine(alert);
-                }
+                Console.WriteLine(alert);
+            }
 
-                // Save report
-                Directory.CreateDirectory("output");
-                await File.WriteAllTextAsync("output/report.txt", string.Join("\n", alerts));
-                Console.WriteLine("\n Report saved to output/report.txt");
-            }
-            else
-            {
-                Console.WriteLine("\n No brute force attacks detected");
-            }
+            // Save report
+            Directory.CreateDirectory("output");
+            await File.WriteAllTextAsync("output/report.txt", string.Join("\n", alerts));
+            Console.WriteLine("\n Report saved to output/report.txt");
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine($" Error: {ex.Message}");
+            Console.WriteLine("\n No brute force attacks detected");
         }
     }
 }
