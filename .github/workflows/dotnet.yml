@@ -24,3 +24,16 @@ jobs:
 
     - name: Test
       run: dotnet test --no-build --verbosity normal
+
+    - name: Publish
+      run: dotnet publish -c Release -o publish
+
+    - name: Simulate Deployment
+      run: mkdir deployment cp -r publish/* deployment/
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: app
+        path: publish/
+      
